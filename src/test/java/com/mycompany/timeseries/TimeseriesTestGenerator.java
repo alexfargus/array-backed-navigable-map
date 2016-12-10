@@ -6,7 +6,6 @@
 package com.mycompany.timeseries;
 
 import com.google.common.collect.testing.Helpers;
-import com.google.common.collect.testing.SafeTreeMap;
 import com.google.common.collect.testing.SampleElements;
 import com.google.common.collect.testing.TestSortedMapGenerator;
 import java.util.List;

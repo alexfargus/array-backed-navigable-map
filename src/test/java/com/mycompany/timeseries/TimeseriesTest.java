@@ -35,7 +35,7 @@ public class TimeseriesTest {
 
         public static TestSuite suite() {
             return NavigableMapTestSuiteBuilder
-                    .<Long, Object>using(new TimeseriesTestGenerator())
+                    .using(new TimeseriesTestGenerator())
                     .named("NavigableMap Tests")
                     .withFeatures(CollectionSize.ANY,
                             MapFeature.SUPPORTS_PUT,

@@ -6,6 +6,7 @@
 package com.mycompany.timeseries;
 
 import com.google.common.collect.ForwardingIterator;
+import com.google.common.collect.ForwardingNavigableMap;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.Spliterator;
 import java.util.stream.Stream;
 
@@ -33,6 +35,7 @@ public class Timeseries extends AbstractMap<Long, Object> implements NavigableMa
     private Integer size = 0;
 
     private EntrySet entrySet = null;
+    private KeySet keySet = null;
 
     @Override
     public Entry<Long, Object> lowerEntry(Long key) {
@@ -76,7 +79,7 @@ public class Timeseries extends AbstractMap<Long, Object> implements NavigableMa
 
     @Override
     public Entry<Long, Object> firstEntry() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return getEntry(firstKey);
     }
 
     @Override
@@ -100,64 +103,70 @@ public class Timeseries extends AbstractMap<Long, Object> implements NavigableMa
     }
 
     @Override
-    public NavigableSet<Long> navigableKeySet() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
     public NavigableSet<Long> descendingKeySet() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return navigableKeySet();
     }
 
     @Override
     public NavigableMap<Long, Object> subMap(Long fromKey, boolean fromInclusive, Long toKey, boolean toInclusive) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return new NavigableSubMap(fromKey, fromInclusive, toKey, toInclusive);
     }
 
     @Override
     public NavigableMap<Long, Object> headMap(Long toKey, boolean inclusive) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return new NavigableSubMap(firstKey, true, toKey, inclusive);
     }
 
     @Override
     public NavigableMap<Long, Object> tailMap(Long fromKey, boolean inclusive) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return new NavigableSubMap(fromKey, inclusive, Long.MAX_VALUE, true);
     }
 
     @Override
     public SortedMap<Long, Object> subMap(Long fromKey, Long toKey) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return subMap(fromKey, true, toKey, false);
     }
 
     @Override
     public SortedMap<Long, Object> headMap(Long toKey) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return headMap(toKey, false);
     }
 
     @Override
     public SortedMap<Long, Object> tailMap(Long fromKey) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return tailMap(fromKey, true);
     }
 
     @Override
     public Comparator<? super Long> comparator() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return Long::compareTo;
     }
 
     @Override
     public Long firstKey() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return firstKey;
     }
 
     @Override
     public Long lastKey() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return firstKey + (indexOffset * size);
     }
 
     @Override
     public Set<Entry<Long, Object>> entrySet() {
-        EntrySet es = entrySet;
+        final EntrySet es = entrySet;
         return (es != null) ? es : (entrySet = new EntrySet());
+    }
+
+    @Override
+    public Set<Long> keySet() {
+        return navigableKeySet();
+    }
+
+    @Override
+    public NavigableSet<Long> navigableKeySet() {
+        final KeySet ks = keySet;
+        return (ks != null) ? ks : (keySet = new KeySet(this));
     }
 
     @Override
@@ -201,6 +210,13 @@ public class Timeseries extends AbstractMap<Long, Object> implements NavigableMa
         if (containsKey(key)) {
             final Integer index = getIndex((Long) key);
             return values.get(index);
+        }
+        return null;
+    }
+
+    protected Map.Entry<Long, Object> getEntry(Long key) {
+        if (containsKey(key)) {
+            return new TimeseriesEntry(key);
         }
         return null;
     }
@@ -293,6 +309,19 @@ public class Timeseries extends AbstractMap<Long, Object> implements NavigableMa
         return (int) Math.floorDiv(key - firstKey, indexOffset);
     }
 
+    protected Stream<Map.Entry<Long, Object>> entryStream(Long fromKey) {
+        final Integer fromIndex = getIndex(fromKey);
+        final Iterator it = values.subList(fromIndex, values.size()).iterator();
+        return Stream.iterate(fromKey, key -> key + indexOffset)
+                .limit(size)
+                .filter(key -> it.next() != null)
+                .map(TimeseriesEntry::new);
+    }
+
+    protected Stream<Map.Entry<Long, Object>> descendingEntryStream(Long fromKey) {
+        return null;
+    }    
+    
     private class EntryIterator extends ForwardingIterator<Map.Entry<Long, Object>> {
 
         private final Iterator<Entry<Long, Object>> delegate;
@@ -309,7 +338,7 @@ public class Timeseries extends AbstractMap<Long, Object> implements NavigableMa
 
         @Override
         public Entry<Long, Object> next() {
-            final Entry<Long, Object> next = super.next();
+            final Entry<Long, Object> next = delegate.next();
             key = next.getKey();
             return next;
         }
@@ -321,7 +350,36 @@ public class Timeseries extends AbstractMap<Long, Object> implements NavigableMa
                 throw new IllegalStateException("remove() can only be called once before calling next()");
             }
         }
+    }
 
+    private class KeyIterator extends ForwardingIterator<Long> {
+
+        private final Iterator<Entry<Long, Object>> delegate;
+        private Long key = null;
+
+        public KeyIterator(Iterator<Entry<Long, Object>> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        protected Iterator delegate() {
+            return delegate;
+        }
+
+        @Override
+        public Long next() {
+            final Entry<Long, Object> next = delegate.next();
+            key = next.getKey();
+            return key;
+        }
+
+        @Override
+        public void remove() {
+            final Object oldValue = Timeseries.this.remove(key);
+            if (oldValue == null) {
+                throw new IllegalStateException("remove() can only be called once before calling next()");
+            }
+        }
     }
 
     private class TimeseriesEntry implements Map.Entry<Long, Object> {
@@ -379,15 +437,7 @@ public class Timeseries extends AbstractMap<Long, Object> implements NavigableMa
 
         @Override
         public Iterator<Map.Entry<Long, Object>> iterator() {
-            return new EntryIterator(entryStream().iterator());
-        }
-
-        private Stream<Map.Entry<Long, Object>> entryStream() {
-            final Iterator it = values.iterator();
-            return Stream.iterate(firstKey, key -> key + indexOffset)
-                    .limit(size)
-                    .filter(key -> it.next() != null)
-                    .map(TimeseriesEntry::new);
+            return new EntryIterator(entryStream(firstKey).iterator());
         }
 
         @Override
@@ -427,8 +477,272 @@ public class Timeseries extends AbstractMap<Long, Object> implements NavigableMa
 
         @Override
         public Spliterator<Map.Entry<Long, Object>> spliterator() {
-            return entryStream().spliterator();
+            return entryStream(firstKey).spliterator();
         }
     }
 
+    private class KeySet extends AbstractSet<Long> implements NavigableSet<Long> {
+
+        final NavigableMap<Long, Object> map;
+
+        public KeySet(NavigableMap<Long, Object> map) {
+            this.map = map;
+        }
+
+        @Override
+        public Iterator<Long> iterator() {
+            return new KeyIterator(entryStream(map.firstKey()).iterator());
+        }
+
+        @Override
+
+        public int size() {
+            return map.size();
+        }
+
+        @Override
+        public Comparator<? super Long> comparator() {
+            return map.comparator();
+        }
+
+        @Override
+        public Long first() {
+            return map.firstKey();
+        }
+
+        @Override
+        public Long last() {
+            return map.lastKey();
+        }
+
+        @Override
+        public Long lower(Long e) {
+            return map.lowerKey(e);
+        }
+
+        @Override
+        public Long floor(Long e) {
+            return map.floorKey(e);
+        }
+
+        @Override
+        public Long ceiling(Long e) {
+            return map.ceilingKey(e);
+        }
+
+        @Override
+        public Long higher(Long e) {
+            return map.higherKey(e);
+        }
+
+        @Override
+        public Long pollFirst() {
+            return map.pollFirstEntry().getKey();
+        }
+
+        @Override
+        public Long pollLast() {
+            return map.pollLastEntry().getKey();
+        }
+
+        @Override
+        public NavigableSet<Long> descendingSet() {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Iterator<Long> descendingIterator() {
+            return new KeyIterator(descendingEntryStream(map.lastKey()).iterator());
+        }
+
+        @Override
+        public NavigableSet<Long> subSet(Long fromElement, boolean fromInclusive, Long toElement, boolean toInclusive) {
+            return map.subMap(firstKey, fromInclusive, firstKey, toInclusive).navigableKeySet();
+        }
+
+        @Override
+        public NavigableSet<Long> headSet(Long toElement, boolean inclusive) {
+            return map.headMap(firstKey, inclusive).navigableKeySet();
+        }
+
+        @Override
+        public NavigableSet<Long> tailSet(Long fromElement, boolean inclusive) {
+            return map.tailMap(firstKey, inclusive).navigableKeySet();
+        }
+
+        @Override
+        public SortedSet<Long> subSet(Long fromElement, Long toElement) {
+            return subMap(firstKey, true, firstKey, false).navigableKeySet();
+        }
+
+        @Override
+        public SortedSet<Long> headSet(Long toElement) {
+            return headSet(toElement, false);
+        }
+
+        @Override
+        public SortedSet<Long> tailSet(Long fromElement) {
+            return tailSet(fromElement, true);
+        }
+
+    }
+    
+    private class DescendingTimeseries extends ForwardingNavigableMap<Long, Object> {
+
+        @Override
+        protected NavigableMap<Long, Object> delegate() {
+            return Timeseries.this;
+        }
+        
+        
+        
+    }
+
+    private class NavigableSubMap extends AbstractMap<Long, Object> implements NavigableMap<Long, Object> {
+
+        private final Long from;
+        private final Long to;
+
+        private EntrySet entrySet = null;
+
+        public NavigableSubMap(Long from, Boolean fromInclusive, Long to, Boolean toInclusive) {
+            this.from = from;
+            this.to = to;
+        }
+
+        @Override
+        public Set<Entry<Long, Object>> entrySet() {
+            final EntrySet es = entrySet;
+            return (es != null) ? es : (entrySet = new EntrySet());
+        }
+
+        @Override
+        public Entry<Long, Object> lowerEntry(Long key) {
+            return Timeseries.this.lowerEntry(key);
+        }
+
+        @Override
+        public Long lowerKey(Long key) {
+            return Timeseries.this.lowerKey(key);
+        }
+
+        @Override
+        public Entry<Long, Object> floorEntry(Long key) {
+            return Timeseries.this.floorEntry(key);
+        }
+
+        @Override
+        public Long floorKey(Long key) {
+            return Timeseries.this.floorKey(key);
+        }
+
+        @Override
+        public Entry<Long, Object> ceilingEntry(Long key) {
+            return Timeseries.this.ceilingEntry(key);
+        }
+
+        @Override
+        public Long ceilingKey(Long key) {
+            return Timeseries.this.ceilingKey(key);
+        }
+
+        @Override
+        public Entry<Long, Object> higherEntry(Long key) {
+            return Timeseries.this.higherEntry(key);
+        }
+
+        @Override
+        public Long higherKey(Long key) {
+            return Timeseries.this.higherKey(key);
+        }
+
+        @Override
+        public Entry<Long, Object> firstEntry() {
+            return Timeseries.this.getEntry(from);
+        }
+
+        @Override
+        public Entry<Long, Object> lastEntry() {
+            return Timeseries.this.getEntry(to);
+        }
+
+        @Override
+        public Entry<Long, Object> pollFirstEntry() {
+            final Entry<Long, Object> entry = entryStream(from).findFirst().orElse(null);
+            if (entry != null) {
+                Timeseries.this.remove(entry.getKey());
+            }
+            return entry;
+        }
+
+        @Override
+        public Entry<Long, Object> pollLastEntry() {
+            final Entry<Long, Object> entry = descendingEntryStream(to).findFirst().orElse(null);
+            if (entry != null) {
+                Timeseries.this.remove(entry.getKey());
+            }
+            return entry;
+        }
+
+        @Override
+        public NavigableMap<Long, Object> descendingMap() {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public NavigableSet<Long> navigableKeySet() {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public NavigableSet<Long> descendingKeySet() {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public NavigableMap<Long, Object> subMap(Long fromKey, boolean fromInclusive, Long toKey, boolean toInclusive) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public NavigableMap<Long, Object> headMap(Long toKey, boolean inclusive) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public NavigableMap<Long, Object> tailMap(Long fromKey, boolean inclusive) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public SortedMap<Long, Object> subMap(Long fromKey, Long toKey) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public SortedMap<Long, Object> headMap(Long toKey) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public SortedMap<Long, Object> tailMap(Long fromKey) {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public Comparator<? super Long> comparator() {
+            return Timeseries.this.comparator();
+        }
+
+        @Override
+        public Long firstKey() {
+            return entryStream(from).findFirst().map(Entry::getKey).orElse(null);
+        }
+
+        @Override
+        public Long lastKey() {
+            return descendingEntryStream(to).findFirst().map(Entry::getKey).orElse(null);
+        }
+
+    }
 }
