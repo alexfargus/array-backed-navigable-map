@@ -28,6 +28,8 @@ public class TimeseriesTestMapInterface extends SortedMapInterfaceTest<Long, Obj
     protected SortedMap<Long, Object> makePopulatedMap() throws UnsupportedOperationException {
         final SortedMap<Long, Object> map = makeEmptyMap();
         map.put(1L, 1.0);
+        map.put(2L, 2.0);
+        map.put(3L, 3.0);
         return map;
     }
 

@@ -9,7 +9,13 @@ import com.google.common.collect.testing.*;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.features.MapFeature;
+import java.util.HashSet;
+import java.util.NavigableMap;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import junit.framework.TestSuite;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -18,11 +24,24 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({TimeseriesTest.GuavaTests.class, TimeseriesTest.AdditionalTests.class})
 public class TimeseriesTest {
 
-    public static class AdditionalTests {
+    public static class AdditionalTests extends Assertions {
 
         @Test
-        public void testFoo() {
+        public void descendingSubmap_entrySet_containsAllEntries() {
 
+            final NavigableMap<Long, Object> map = makeMap();
+            final Set<Long> expected = new HashSet<>(map.keySet());
+            final Set<Long> result = new HashSet<>(map.descendingMap().keySet());
+
+            assertThat(result).isEqualTo(expected);
+        }
+
+        protected final NavigableMap<Long, Object> makeMap() {
+            final NavigableMap<Long, Object> map = new Timeseries();
+            map.putAll(LongStream.range(0L, 10L)
+                    .boxed()
+                    .collect(Collectors.toMap(k -> k, v -> v.doubleValue())));
+            return map;
         }
 
     }
@@ -40,7 +59,6 @@ public class TimeseriesTest {
                     .withFeatures(CollectionSize.ANY,
                             MapFeature.SUPPORTS_PUT,
                             MapFeature.SUPPORTS_REMOVE,
-                            MapFeature.ALLOWS_NULL_VALUES,
                             CollectionFeature.SUPPORTS_ITERATOR_REMOVE
                     )
                     .createTestSuite();
