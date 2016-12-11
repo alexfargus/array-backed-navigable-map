@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.stream.Stream;
@@ -178,7 +179,7 @@ public abstract class AbstractTimeseries extends AbstractMap<Long, Object> imple
         if (Long.class.isInstance(key)) {
             return data.remove((Long) key);
         }
-        return false;
+        return null;
     }
 
     @Override
@@ -186,7 +187,7 @@ public abstract class AbstractTimeseries extends AbstractMap<Long, Object> imple
         if (Long.class.isInstance(key)) {
             return data.get((Long) key);
         }
-        return false;
+        return null;
     }
 
     @Override

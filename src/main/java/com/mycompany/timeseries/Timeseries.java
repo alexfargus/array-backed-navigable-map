@@ -9,6 +9,7 @@ import com.mycompany.timeseries.data.ArrayListData;
 import com.mycompany.timeseries.data.DataView;
 import java.util.Comparator;
 import java.util.NavigableMap;
+import java.util.NoSuchElementException;
 import java.util.stream.Stream;
 
 /**
@@ -31,11 +32,17 @@ public class Timeseries extends AbstractTimeseries implements NavigableMap<Long,
 
     @Override
     public Stream<Entry<Long, Object>> entryStream() {
+        if (isEmpty()) {
+            return Stream.empty();
+        }
         return data.entryStream(firstKey(), ascending);
     }
 
     @Override
     public Stream<Entry<Long, Object>> descendingEntryStream() {
+        if (isEmpty()) {
+            return Stream.empty();
+        }        
         return data.entryStream(lastKey(), !ascending);
     }
 
@@ -62,17 +69,18 @@ public class Timeseries extends AbstractTimeseries implements NavigableMap<Long,
 
     @Override
     public Long firstKey() {
+        if (isEmpty()) {
+            throw new NoSuchElementException();
+        }
         return data.firstKey(ascending);
     }
 
     @Override
     public Long lastKey() {
+        if (isEmpty()) {
+            throw new NoSuchElementException();
+        }        
         return data.lastKey(ascending);
-    }
-
-    @Override
-    public String toString() {
-        return "Timeseries{" + "ascending=" + ascending + '}';
     }
 
 }

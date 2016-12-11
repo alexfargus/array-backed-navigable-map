@@ -28,6 +28,7 @@ public class TimeseriesEntrySet extends AbstractSet<Map.Entry<Long, Object>> {
 
         private final Iterator<Map.Entry<Long, Object>> delegate;
         private Long key = null;
+        private boolean removed = true;
 
         public EntryIterator(Iterator<Map.Entry<Long, Object>> delegate) {
             this.delegate = delegate;
@@ -41,18 +42,18 @@ public class TimeseriesEntrySet extends AbstractSet<Map.Entry<Long, Object>> {
         @Override
         public Map.Entry<Long, Object> next() {
             final Map.Entry<Long, Object> next = delegate.next();
+            removed = false;            
             key = next.getKey();
             return next;
         }
 
         @Override
         public void remove() {
-            final Object oldValue = timeseries.remove(key);
-            /*
-            if (oldValue == null) {
-                throw new IllegalStateException("Entry has already been removed");
+            if (removed) {
+                throw new IllegalStateException("remove() can only be called once after each call to next()");
             }
-            */
+            timeseries.remove(key);
+            removed = true;
         }
     }
 

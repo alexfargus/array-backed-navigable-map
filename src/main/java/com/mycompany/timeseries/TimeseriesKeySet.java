@@ -140,6 +140,7 @@ public class TimeseriesKeySet extends AbstractSet<Long> implements NavigableSet<
 
         private final Iterator<Map.Entry<Long, Object>> delegate;
         private Map.Entry<Long, Object> next = null;
+        private boolean removed = true;
 
         public KeyIterator(Iterator<Map.Entry<Long, Object>> delegate) {
             this.delegate = delegate;
@@ -153,18 +154,17 @@ public class TimeseriesKeySet extends AbstractSet<Long> implements NavigableSet<
         @Override
         public Long next() {
             next = delegate.next();
+            removed = false;
             return next.getKey();
         }
 
         @Override
         public void remove() {
-
-            timeseries.remove(next.getKey());
-            /*
-            if (oldValue == null) {
-                throw new IllegalStateException("remove() can only be called once before calling next()");
+            if (removed) {
+                throw new IllegalStateException("remove() can only be called once after each call to next()");
             }
-             */
+            timeseries.remove(next.getKey());
+            removed = true;
         }
     }
 

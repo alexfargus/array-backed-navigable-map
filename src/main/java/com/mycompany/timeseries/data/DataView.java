@@ -19,10 +19,10 @@ public class DataView implements Data {
 
     private final Data delegate;
 
-    private final Long lower;
+    private Long lower;
     private final Boolean includeLower;
 
-    private final Long upper;
+    private Long upper;
     private final Boolean includeUpper;
 
     public DataView(Data delegate, Long fromKey, Boolean fromInclusive, Long toKey, Boolean toInclusive) {
@@ -108,6 +108,12 @@ public class DataView implements Data {
 
     @Override
     public Object put(Long key, Object value) {
+        if (key < lower) {
+            lower = key;
+        }
+        if (key > upper) {
+            upper = key;
+        }
         return delegate.put(key, value);
     }
 

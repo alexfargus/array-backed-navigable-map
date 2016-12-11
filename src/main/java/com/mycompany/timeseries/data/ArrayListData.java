@@ -5,12 +5,12 @@
  */
 package com.mycompany.timeseries.data;
 
-import com.google.common.collect.FluentIterable;
 import com.mycompany.timeseries.Data;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -43,12 +43,12 @@ public class ArrayListData implements Data {
         return Stream.iterate(fromKey, key -> key + indexOffset)
                 // Prevent infinite loops by limiting the max size of the stream
                 .limit(values.size())
-                .filter(key -> (it.hasNext() && it.next() != null) || Objects.equals(key, lastKey))
+                .filter(this::containsKey)
                 // Terminate stream when we have all possible values
                 .limit(size)
                 .map(TimeseriesEntry::new);
     }
-
+    
     private Stream<Map.Entry<Long, Object>> descendingEntryStream(Long fromKey) {
         if (isEmpty()) {
             return Stream.empty();
@@ -61,12 +61,9 @@ public class ArrayListData implements Data {
         return Stream.iterate(fromKey, key -> key - indexOffset)
                 // Prevent infinite loops by limiting the max size of the stream
                 .limit(values.size())
-                .peek(System.out::println)
-                .filter(key -> (it.hasPrevious() && it.previous() != null) || Objects.equals(key, firstKey))
-                .peek(System.out::println)
+                .filter(this::containsKey)
                 // Terminate stream when we have all possible values
                 .limit(size)
-                .peek(System.out::println)
                 .map(TimeseriesEntry::new);
     }
 
@@ -110,6 +107,9 @@ public class ArrayListData implements Data {
 
     @Override
     public boolean containsValue(Object value) {
+        if (value == null) {
+            return false;
+        }
         return values.contains(value);
     }
 
@@ -143,15 +143,16 @@ public class ArrayListData implements Data {
             firstKey = key;
             values.addAll(0, makeListOfSize(-index));
             index = 0;
-            size += 1;
         } else if (index >= values.size()) {
             lastKey = key;
             values.addAll(values.size(), makeListOfSize(index - values.size()));
-            size += 1;
         } 
 
-        return values.set(index, value);
-
+        final Object oldValue = values.set(index, value);
+        if (oldValue == null) {
+            size += 1;
+        }
+        return oldValue;
     }
 
     private List<Object> makeListOfSize(Integer size) {
@@ -227,11 +228,14 @@ public class ArrayListData implements Data {
             if (obj == null) {
                 return false;
             }
-            if (getClass() != obj.getClass()) {
+            if (!Entry.class.isInstance(obj)) {
                 return false;
             }
-            final TimeseriesEntry other = (TimeseriesEntry) obj;
-            if (!Objects.equals(this.key, other.key)) {
+            final Entry other = (Entry) obj;
+            if (!Objects.equals(this.key, other.getKey())) {
+                return false;
+            }
+            if (!Objects.equals(this.getValue(), other.getValue())) {
                 return false;
             }
             return true;
