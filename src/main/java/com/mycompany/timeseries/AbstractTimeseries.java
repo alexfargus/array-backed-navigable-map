@@ -7,6 +7,7 @@ package com.mycompany.timeseries;
 
 import java.util.AbstractMap;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -38,7 +39,7 @@ public abstract class AbstractTimeseries extends AbstractMap<Long, Object> imple
     @Override
     public Entry<Long, Object> lowerEntry(Long key) {
         return descendingEntryStream()
-                .skip(1)
+                .filter(e -> e.getKey() < key)
                 .findFirst()
                 .orElse(null);
     }
@@ -52,6 +53,7 @@ public abstract class AbstractTimeseries extends AbstractMap<Long, Object> imple
     @Override
     public Entry<Long, Object> floorEntry(Long key) {
         return descendingEntryStream()
+                .filter(e -> e.getKey() <= key)
                 .findFirst()
                 .orElse(null);
     }
@@ -65,6 +67,7 @@ public abstract class AbstractTimeseries extends AbstractMap<Long, Object> imple
     @Override
     public Entry<Long, Object> ceilingEntry(Long key) {
         return entryStream()
+                .filter(e -> e.getKey() >= key)
                 .findFirst()
                 .orElse(null);
     }
@@ -78,7 +81,7 @@ public abstract class AbstractTimeseries extends AbstractMap<Long, Object> imple
     @Override
     public Entry<Long, Object> higherEntry(Long key) {
         return entryStream()
-                .skip(1)
+                .filter(e -> e.getKey() > key)
                 .findFirst()
                 .orElse(null);
     }

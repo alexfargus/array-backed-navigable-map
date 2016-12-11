@@ -35,47 +35,70 @@ public class DataView implements Data {
 
     @Override
     public Stream<Map.Entry<Long, Object>> entryStream(Long fromKey, boolean ascending) {
-        final Long from = firstKey(ascending);
-        return delegate.entryStream(from, ascending)
+        return delegate.entryStream(fromKey, ascending)
                 .filter(e -> keyWithinBounds(e.getKey()));
     }
 
     private boolean checkLowerBound(Long key) {
+        final Long lowerBound = lowerBound();
+        if (lowerBound == null) {
+            return false;
+        }
         if (includeLower) {
-            return key >= lower;
+            return key >= lowerBound;
         }
-        return key > lower;
+        return key > lowerBound;
     }
-    
+
     private boolean checkUpperBound(Long key) {
-        if (includeUpper) {
-            return key <= upper;
+        final Long upperBound = upperBound();
+        if (upperBound == null) {
+            return false;
         }
-        return key < upper;
-    }    
-    
+        if (includeUpper) {
+            return key <= upperBound;
+        }
+        return key < upperBound;
+    }
+
     private Stream<Map.Entry<Long, Object>> stream() {
-        return entryStream(firstKey(true), true);
+        return entryStream(lowerBound(), true);
     }
 
     private boolean keyWithinBounds(Long key) {
-        return checkLowerBound(key) && checkUpperBound(key);
+        return key != null && checkLowerBound(key) && checkUpperBound(key);
+    }
+
+    @Override
+    public Long lowerBound() {
+        return lower == null ? delegate.lowerBound() : lower;
+    }
+
+    @Override
+    public Long upperBound() {
+        return upper == null ? delegate.upperBound() : upper;
     }
 
     @Override
     public Long firstKey(boolean ascending) {
-        if (lower == null) {
-            return delegate.firstKey(ascending);
+        final Long from;
+        if (ascending) {
+            from = lowerBound();
+        } else {
+            from = upperBound();
         }
-        return ascending ? lower : upper;
+        return entryStream(from, ascending).findFirst().map(e -> e.getKey()).orElse(null);
     }
 
     @Override
     public Long lastKey(boolean ascending) {
-        if (upper == null) {
-            return delegate.lastKey(ascending);
+        final Long from;
+        if (ascending) {
+            from = upperBound();
+        } else {
+            from = lowerBound();
         }
-        return ascending ? upper : lower;
+        return entryStream(from, !ascending).findFirst().map(e -> e.getKey()).orElse(null);
     }
 
     @Override
@@ -85,6 +108,9 @@ public class DataView implements Data {
 
     @Override
     public boolean isEmpty() {
+        if (upperBound() == null || lowerBound() == null) {
+            return true;
+        }
         return stream().findAny().isPresent();
     }
 

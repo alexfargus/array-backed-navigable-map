@@ -56,7 +56,7 @@ public class TimeseriesTest {
             return NavigableMapTestSuiteBuilder
                     .using(new TimeseriesTestGenerator())
                     .named("NavigableMap Tests")
-                    .withFeatures(CollectionSize.ONE,
+                    .withFeatures(CollectionSize.ANY,
                             MapFeature.SUPPORTS_PUT,
                             MapFeature.SUPPORTS_REMOVE,
                             CollectionFeature.SUPPORTS_ITERATOR_REMOVE

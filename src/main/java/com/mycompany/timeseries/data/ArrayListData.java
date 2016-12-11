@@ -32,13 +32,13 @@ public class ArrayListData implements Data {
     }
 
     private Stream<Map.Entry<Long, Object>> ascendingEntryStream(Long fromKey) {
-        if (isEmpty()) {
+        if (isEmpty() || fromKey == null) {
             return Stream.empty();
         }
         final Integer fromIndex = Math.max(getIndex(fromKey), 0);
         if (fromIndex > values.size()) {
             return Stream.empty();
-        }        
+        }
         final ListIterator it = values.listIterator(fromIndex);
         return Stream.iterate(fromKey, key -> key + indexOffset)
                 // Prevent infinite loops by limiting the max size of the stream
@@ -48,15 +48,15 @@ public class ArrayListData implements Data {
                 .limit(size)
                 .map(TimeseriesEntry::new);
     }
-    
+
     private Stream<Map.Entry<Long, Object>> descendingEntryStream(Long fromKey) {
-        if (isEmpty()) {
+        if (isEmpty() || fromKey == null) {
             return Stream.empty();
-        }        
+        }
         final Integer fromIndex = Math.min(getIndex(fromKey), values.size());
         if (fromIndex < 0) {
             return Stream.empty();
-        }                     
+        }
         final ListIterator it = values.listIterator(fromIndex);
         return Stream.iterate(fromKey, key -> key - indexOffset)
                 // Prevent infinite loops by limiting the max size of the stream
@@ -75,16 +75,26 @@ public class ArrayListData implements Data {
             return descendingEntryStream(fromKey);
         }
     }
-    
+
     @Override
     public Long firstKey(boolean ascending) {
         return ascending ? firstKey : lastKey;
     }
-    
+
     @Override
     public Long lastKey(boolean ascending) {
         return ascending ? lastKey : firstKey;
-    }    
+    }
+
+    @Override
+    public Long upperBound() {
+        return lastKey;
+    }
+
+    @Override
+    public Long lowerBound() {
+        return firstKey;
+    }
 
     @Override
     public int size() {
@@ -98,7 +108,7 @@ public class ArrayListData implements Data {
 
     @Override
     public boolean containsKey(Long key) {
-        if (isEmpty()) {
+        if (isEmpty() || key == null) {
             return false;
         }
         final Integer index = getIndex(key);
@@ -146,7 +156,7 @@ public class ArrayListData implements Data {
         } else if (index >= values.size()) {
             lastKey = key;
             values.addAll(values.size(), makeListOfSize(index - values.size()));
-        } 
+        }
 
         final Object oldValue = values.set(index, value);
         if (oldValue == null) {
@@ -160,8 +170,7 @@ public class ArrayListData implements Data {
                 .limit(size + 1)
                 .collect(Collectors.toList());
     }
-    
-    
+
     @Override
     public Object remove(Long key) {
         if (containsKey(key)) {
@@ -244,7 +253,7 @@ public class ArrayListData implements Data {
         @Override
         public String toString() {
             return key + "=" + getValue();
-        }        
+        }
     }
 
     @Override

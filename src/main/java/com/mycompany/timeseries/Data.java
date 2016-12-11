@@ -19,6 +19,10 @@ public interface Data {
     public Long firstKey(boolean ascending);
     
     public Long lastKey(boolean ascending);
+    
+    public Long upperBound();
+    
+    public Long lowerBound();
 
     public int size();
 

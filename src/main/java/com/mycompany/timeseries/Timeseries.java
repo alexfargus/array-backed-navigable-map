@@ -42,7 +42,7 @@ public class Timeseries extends AbstractTimeseries implements NavigableMap<Long,
     public Stream<Entry<Long, Object>> descendingEntryStream() {
         if (isEmpty()) {
             return Stream.empty();
-        }        
+        }
         return data.entryStream(lastKey(), !ascending);
     }
 
@@ -79,7 +79,7 @@ public class Timeseries extends AbstractTimeseries implements NavigableMap<Long,
     public Long lastKey() {
         if (isEmpty()) {
             throw new NoSuchElementException();
-        }        
+        }
         return data.lastKey(ascending);
     }
 
