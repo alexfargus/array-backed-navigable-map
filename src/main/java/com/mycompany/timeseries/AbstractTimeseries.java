@@ -148,8 +148,9 @@ public abstract class AbstractTimeseries extends AbstractMap<Long, Object> imple
 
     @Override
     public Entry<Long, Object> pollFirstEntry() {
-        final Entry<Long, Object> entry = firstEntry();
+        Entry<Long, Object> entry = firstEntry();
         if (entry != null) {
+            entry = new SimpleImmutableEntry<>(entry.getKey(), entry.getValue());
             data.remove(entry.getKey());
         }
         return entry;
@@ -157,8 +158,9 @@ public abstract class AbstractTimeseries extends AbstractMap<Long, Object> imple
 
     @Override
     public Entry<Long, Object> pollLastEntry() {
-        final Entry<Long, Object> entry = lastEntry();
+        Entry<Long, Object> entry = lastEntry();
         if (entry != null) {
+            entry = new SimpleImmutableEntry<>(entry.getKey(), entry.getValue());
             data.remove(entry.getKey());
         }
         return entry;

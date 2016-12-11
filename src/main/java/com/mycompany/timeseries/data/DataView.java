@@ -37,7 +37,7 @@ public class DataView implements Data {
     public Stream<Map.Entry<Long, Object>> entryStream(Long fromKey, boolean ascending) {
         final Long from = firstKey(ascending);
         return delegate.entryStream(from, ascending)
-                .filter(e -> checkLowerBound(e.getKey()) && checkUpperBound(e.getKey()));
+                .filter(e -> keyWithinBounds(e.getKey()));
     }
 
     private boolean checkLowerBound(Long key) {
@@ -59,7 +59,7 @@ public class DataView implements Data {
     }
 
     private boolean keyWithinBounds(Long key) {
-        return key >= firstKey(true) && key <= lastKey(true);
+        return checkLowerBound(key) && checkUpperBound(key);
     }
 
     @Override
@@ -72,7 +72,7 @@ public class DataView implements Data {
 
     @Override
     public Long lastKey(boolean ascending) {
-        if (lower == null) {
+        if (upper == null) {
             return delegate.lastKey(ascending);
         }
         return ascending ? upper : lower;

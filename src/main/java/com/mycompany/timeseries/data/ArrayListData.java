@@ -241,6 +241,10 @@ public class ArrayListData implements Data {
             return true;
         }
 
+        @Override
+        public String toString() {
+            return key + "=" + getValue();
+        }        
     }
 
     @Override
