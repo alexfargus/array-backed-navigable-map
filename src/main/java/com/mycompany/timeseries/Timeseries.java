@@ -52,7 +52,7 @@ public class Timeseries extends AbstractTimeseries implements NavigableMap<Long,
     }
 
     @Override
-    public NavigableMap<Long, Object> subMap(Long fromKey, boolean fromInclusive, Long toKey, boolean toInclusive) {
+    public NavigableMap<Long, Object> createSubMapView(Long fromKey, boolean fromInclusive, Long toKey, boolean toInclusive) {
         final Data view = new DataView(data, fromKey, fromInclusive, toKey, toInclusive);
         return new Timeseries(view, ascending);
     }

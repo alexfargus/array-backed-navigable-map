@@ -104,17 +104,20 @@ public abstract class AbstractTimeseries extends AbstractMap<Long, Object> imple
 
     @Override
     public NavigableMap<Long, Object> headMap(Long toKey, boolean inclusive) {
-        return subMap(firstKey(), true, toKey, inclusive);
+        return createSubMapView(firstKey(), true, toKey, inclusive);        
     }
 
     @Override
     public NavigableMap<Long, Object> tailMap(Long fromKey, boolean inclusive) {
-        return subMap(fromKey, inclusive, lastKey(), true);
+        return createSubMapView(fromKey, inclusive, lastKey(), true);
     }
 
     @Override
     public SortedMap<Long, Object> subMap(Long fromKey, Long toKey) {
-        return subMap(fromKey, true, toKey, false);
+        if (fromKey > toKey) {
+            throw new IllegalArgumentException();
+        }
+        return createSubMapView(fromKey, true, toKey, false);
     }
 
     @Override
@@ -126,6 +129,16 @@ public abstract class AbstractTimeseries extends AbstractMap<Long, Object> imple
     public SortedMap<Long, Object> tailMap(Long fromKey) {
         return tailMap(fromKey, true);
     }
+
+    @Override
+    public NavigableMap<Long, Object> subMap(Long fromKey, boolean fromInclusive, Long toKey, boolean toInclusive) {
+        if (fromKey > toKey) {
+            throw new IllegalArgumentException();
+        }
+        return createSubMapView(fromKey, fromInclusive, toKey, toInclusive);
+    }
+    
+    public abstract NavigableMap<Long, Object> createSubMapView(Long fromKey, boolean fromInclusive, Long toKey, boolean toInclusive);
 
     @Override
     public Set<Entry<Long, Object>> entrySet() {
